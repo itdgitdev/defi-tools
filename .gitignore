@@ -1,0 +1,11 @@
+# Local credentials and configuration
+.env
+**/config/local.json
+# Python environments and generated files
+**/.venv/
+**/__pycache__/
+**/*.py[cod]
+**/.pytest_cache/
+**/*.egg-info/
+# Runtime state
+**/runtime/

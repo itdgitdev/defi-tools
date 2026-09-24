@@ -1,0 +1,6 @@
+mysql-connector-python==9.7.0
+python-dotenv==1.2.2
+requests==2.34.2
+solders==0.26.0
+web3==7.16.0
+-e .

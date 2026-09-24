@@ -1,0 +1,43 @@
+{
+  "version": 2,
+  "dry_run": true,
+  "interval_seconds": 1800,
+  "use_legacy_position_cache": false,
+  "use_db_position_cache": false,
+  "wallets": {
+    "main": {
+      "bot_wallet": "0x0000000000000000000000000000000000000000",
+      "private_key_prefix_env": "CONFIGURED_REBALANCER_MAIN_PRIVATE_KEY_PREFIX"
+    }
+  },
+  "pool_defaults": {
+    "dex_type": "aerodrome_gauge",
+    "wallet": "main",
+    "slippage_bps": 50,
+    "max_swap_price_impact_pct": 1.0,
+    "execute_burn": false,
+    "auto_bootstrap_start_block": true,
+    "auto_compound": {
+      "enabled": false,
+      "min_interval_seconds": 21600,
+      "min_compound_usd": 5.0,
+      "gas_cost_multiplier": 3.0,
+      "min_range_buffer_ratio": 0.1,
+      "max_jobs_per_cycle": 1
+    }
+  },
+  "pools": [
+    {
+      "name": "example-aerodrome-pool",
+      "chain": "BAS",
+      "pool_address": "0x0000000000000000000000000000000000000000",
+      "position_strategy": "fee",
+      "seed_token_ids": [],
+      "rebalance_range": {
+        "mode": "price_percent",
+        "lower_percent": -10.0,
+        "upper_percent": 20.0
+      }
+    }
+  ]
+}

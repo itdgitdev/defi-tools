@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "interval_seconds": 60,
+  "stale_after_seconds": 180,
+  "accounts": [
+    {
+      "alias": "main-hedge",
+      "markets": ["USD_M", "COIN_M"],
+      "linked_wallets": [
+        "0x0000000000000000000000000000000000000000"
+      ]
+    }
+  ]
+}

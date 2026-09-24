@@ -1,0 +1,7 @@
+eth-account==0.13.7
+mysql-connector-python==9.7.0
+python-dotenv==1.2.2
+requests==2.34.2
+w3multicall==0.3.1
+web3==7.16.0
+-e .
