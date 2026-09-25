@@ -25,10 +25,10 @@ try {
         if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
         if ($Mode -eq "Check") { exit 0 }
     }
-    if ($Mode -eq "Once" -or $Mode -eq "Loop") {
-        Write-Host "LIVE MODE: only one worker may use the same wallet."
-        if ((Read-Host "Type LIVE to continue") -cne "LIVE") { exit 1 }
-    }
+    # if ($Mode -eq "Once" -or $Mode -eq "Loop") {
+    #     Write-Host "LIVE MODE: only one worker may use the same wallet."
+    #     if ((Read-Host "Type LIVE to continue") -cne "LIVE") { exit 1 }
+    # }
     $cliArgs = @("-m", "configured_pool_rebalancer.cli", "--config", $ConfigFile)
     switch ($Mode) {
         "Once" { $cliArgs += @("--execute", "--migrate") }
