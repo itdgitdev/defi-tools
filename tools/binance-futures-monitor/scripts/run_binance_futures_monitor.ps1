@@ -15,7 +15,12 @@ if (-not [IO.Path]::IsPathRooted($CredentialsEnv)) { $CredentialsEnv = Join-Path
 foreach ($file in @($ConfigFile, $CredentialsEnv)) {
     if (-not (Test-Path -LiteralPath $file -PathType Leaf)) { throw "Required file not found: $file" }
 }
-if (-not (Test-Path -LiteralPath $pythonExe -PathType Leaf)) {
+$needsSetup = -not (Test-Path -LiteralPath $pythonExe -PathType Leaf)
+if (-not $needsSetup) {
+    & $pythonExe -c "import importlib.util, sys; sys.exit(importlib.util.find_spec('binance_futures_monitor') is None)"
+    $needsSetup = $LASTEXITCODE -ne 0
+}
+if ($needsSetup) {
     & (Join-Path $PSScriptRoot "setup.ps1")
     if ($LASTEXITCODE -ne 0) { throw "Monitor setup failed" }
 }
