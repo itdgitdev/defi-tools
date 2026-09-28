@@ -1,6 +1,7 @@
 $ErrorActionPreference = "Stop"
 $toolRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 $pythonExe = Join-Path $toolRoot ".venv\Scripts\python.exe"
+$environmentCheck = Join-Path $PSScriptRoot "check_environment.py"
 if (-not (Test-Path -LiteralPath $pythonExe -PathType Leaf)) {
     & py -3.13 -m venv (Join-Path $toolRoot ".venv")
     if ($LASTEXITCODE -ne 0) { throw "Python 3.13 environment setup failed" }
@@ -9,6 +10,8 @@ Push-Location $toolRoot
 try {
     & $pythonExe -m pip install -r (Join-Path $toolRoot "requirements.txt")
     if ($LASTEXITCODE -ne 0) { throw "Dependency installation failed" }
+    & $pythonExe $environmentCheck
+    if ($LASTEXITCODE -ne 0) { throw "Monitor environment check failed" }
     & $pythonExe -m binance_futures_monitor.cli --help | Out-Null
     if ($LASTEXITCODE -ne 0) { throw "Monitor import check failed" }
 } finally { Pop-Location }

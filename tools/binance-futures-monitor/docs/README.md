@@ -38,24 +38,30 @@ two copies. Keep account aliases and the two workers' JSON configs unchanged.
 
 ## Run
 
-From the project root:
+From the tool directory, set up its own Python environment once:
 
 ```powershell
-.\run_binance_futures_monitor.ps1
+.\scripts\setup.ps1
 ```
 
-Or double-click `RUN_BINANCE_FUTURES_MONITOR.bat` at the root. The old module-local
-batch file forwards to it. The launcher resolves paths relative to its own directory,
-uses `.venv\Scripts\python.exe`, and preserves first-time Python 3.13 environment
-setup. By default it migrates tables and runs continuously in an interactive terminal.
-Use `-Once` for one cycle, `-SkipMigration` to skip migration, or `-ConfigFile` and
-`-CredentialsEnv` to select other files. Relative launcher paths are project-root relative.
-
-Equivalent direct CLI command (run from the project root):
+You can also double-click `scripts\01_SETUP.bat`. Then run:
 
 ```powershell
-python -m latest_farms.binance_futures_monitor.cli `
-  --config my_binance_monitor_config.json `
+.\scripts\run_binance_futures_monitor.ps1
+```
+
+The module-local `scripts\RUN_BINANCE_FUTURES_MONITOR.bat` runs the same launcher.
+It uses this tool's `.venv\Scripts\python.exe` and repairs a missing or stale
+installation before starting. By default it migrates tables and runs continuously in
+an interactive terminal.
+Use `-Once` for one cycle, `-SkipMigration` to skip migration, or `-ConfigFile` and
+`-CredentialsEnv` to select other files. Relative launcher paths are tool-relative.
+
+Equivalent direct CLI command (run from the tool directory):
+
+```powershell
+.\.venv\Scripts\python.exe -m binance_futures_monitor.cli `
+  --config config\local.json `
   --migrate `
   --loop
 ```

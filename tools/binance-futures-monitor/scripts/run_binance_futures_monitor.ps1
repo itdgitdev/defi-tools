@@ -8,6 +8,7 @@ $ErrorActionPreference = "Stop"
 $toolRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 $repoRoot = (Resolve-Path (Join-Path $toolRoot "..\..")).Path
 $pythonExe = Join-Path $toolRoot ".venv\Scripts\python.exe"
+$environmentCheck = Join-Path $PSScriptRoot "check_environment.py"
 if (-not $ConfigFile) { $ConfigFile = Join-Path $toolRoot "config\local.json" }
 if (-not $CredentialsEnv) { $CredentialsEnv = Join-Path $repoRoot ".env" }
 if (-not [IO.Path]::IsPathRooted($ConfigFile)) { $ConfigFile = Join-Path $toolRoot $ConfigFile }
@@ -17,7 +18,7 @@ foreach ($file in @($ConfigFile, $CredentialsEnv)) {
 }
 $needsSetup = -not (Test-Path -LiteralPath $pythonExe -PathType Leaf)
 if (-not $needsSetup) {
-    & $pythonExe -c "import importlib.util, sys; sys.exit(importlib.util.find_spec('binance_futures_monitor') is None)"
+    & $pythonExe $environmentCheck
     $needsSetup = $LASTEXITCODE -ne 0
 }
 if ($needsSetup) {
