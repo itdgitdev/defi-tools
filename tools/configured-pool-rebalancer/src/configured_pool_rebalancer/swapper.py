@@ -4,7 +4,8 @@ import base64
 import datetime
 import hmac
 import logging
-from urllib.parse import urlencode
+import os
+from urllib.parse import urlencode, urlsplit
 
 import requests
 from requests.exceptions import RequestException, Timeout
@@ -68,7 +69,7 @@ class V3Swapper:
             "maxHops": 2,
         }
         try:
-            response = requests.get(url, params=params, headers=headers, timeout=30)
+            response = self._kyber_request("GET", url, params=params, headers=headers)
             if not self._response_is_success(response):
                 self._log_http_failure("kyber route", response)
                 return None
@@ -77,20 +78,27 @@ class V3Swapper:
             except ValueError:
                 self._log_parse_failure("kyber route", response)
                 return None
+            if not isinstance(data, dict):
+                self._log_parse_failure("kyber route", response)
+                return None
             if data.get("code") == 0:
-                return data.get("data")
+                route_data = data.get("data")
+                return route_data if isinstance(route_data, dict) else None
             log.warning(
                 "kyber route unavailable chain=%s code=%s message=%s",
                 self.chain_name,
                 data.get("code"),
-                str(data.get("message") or data.get("error") or "")[:300],
+                self._kyber_response_message(data),
             )
             return None
         except Timeout:
             log.warning("kyber route timeout chain=%s amount=%s", self.chain_name, amount_wei)
             return None
         except RequestException as exc:
-            log.warning("kyber route request error chain=%s amount=%s error=%s", self.chain_name, amount_wei, exc)
+            log.warning("kyber route request error chain=%s amount=%s error_type=%s", self.chain_name, amount_wei, type(exc).__name__)
+            return None
+        except ValueError:
+            log.warning("kyber route configuration error chain=%s reason=invalid proxy URL", self.chain_name)
             return None
 
     def build_kyber_swap_data(self, route_summary: dict, sender_address: str, slippage_bps: int = 10) -> dict | None:
@@ -107,7 +115,7 @@ class V3Swapper:
             "source": "configured_pool_rebalancer",
         }
         try:
-            response = requests.post(url, json=payload, headers=headers, timeout=30)
+            response = self._kyber_request("POST", url, json=payload, headers=headers)
             if not self._response_is_success(response):
                 self._log_http_failure("kyber build", response)
                 return None
@@ -116,21 +124,62 @@ class V3Swapper:
             except ValueError:
                 self._log_parse_failure("kyber build", response)
                 return None
+            if not isinstance(data, dict):
+                self._log_parse_failure("kyber build", response)
+                return None
             if data.get("code") == 0:
-                return data.get("data")
+                build_data = data.get("data")
+                return build_data if isinstance(build_data, dict) else None
             log.warning(
                 "kyber build unavailable chain=%s code=%s message=%s",
                 self.chain_name,
                 data.get("code"),
-                str(data.get("message") or data.get("error") or "")[:300],
+                self._kyber_response_message(data),
             )
             return None
         except Timeout:
             log.warning("kyber build timeout chain=%s", self.chain_name)
             return None
         except RequestException as exc:
-            log.warning("kyber build request error chain=%s error=%s", self.chain_name, exc)
+            log.warning("kyber build request error chain=%s error_type=%s", self.chain_name, type(exc).__name__)
             return None
+        except ValueError:
+            log.warning("kyber build configuration error chain=%s reason=invalid proxy URL", self.chain_name)
+            return None
+
+    @staticmethod
+    def _kyber_request(method: str, url: str, **kwargs):
+        proxy_url = os.getenv("SWAPPER_KYBER_PROXY_URL", "").strip()
+        if not proxy_url:
+            request = requests.get if method == "GET" else requests.post
+            return request(url, timeout=30, **kwargs)
+
+        try:
+            parsed = urlsplit(proxy_url)
+            port = parsed.port
+        except ValueError as exc:
+            raise ValueError("invalid SWAPPER_KYBER_PROXY_URL") from exc
+        if (
+            parsed.scheme.lower() not in {"http", "https"}
+            or not parsed.hostname
+            or port == 0
+            or parsed.path not in {"", "/"}
+            or parsed.query
+            or parsed.fragment
+        ):
+            raise ValueError("SWAPPER_KYBER_PROXY_URL must be an HTTP(S) proxy URL")
+
+        with requests.Session() as session:
+            session.trust_env = False
+            return session.request(
+                method, url, timeout=(2, 5), proxies={"https": proxy_url}, **kwargs
+            )
+
+    @staticmethod
+    def _kyber_response_message(data: dict) -> str:
+        if os.getenv("SWAPPER_KYBER_PROXY_URL", "").strip():
+            return "[omitted for proxied Kyber request]"
+        return str(data.get("message") or data.get("error") or "")[:300]
 
     def get_0x_swap_quote(
         self,
@@ -280,23 +329,33 @@ class V3Swapper:
             return None
 
     def _log_http_failure(self, operation: str, response) -> None:
+        preview = (
+            "[omitted for proxied Kyber request]"
+            if operation.startswith("kyber") and os.getenv("SWAPPER_KYBER_PROXY_URL", "").strip()
+            else self._response_preview(response)
+        )
         log.warning(
             "%s HTTP error chain=%s status=%s content_type=%s preview=%s",
             operation,
             self.chain_name,
             response.status_code,
             getattr(response, "headers", {}).get("Content-Type", ""),
-            self._response_preview(response),
+            preview,
         )
 
     def _log_parse_failure(self, operation: str, response) -> None:
+        preview = (
+            "[omitted for proxied Kyber request]"
+            if operation.startswith("kyber") and os.getenv("SWAPPER_KYBER_PROXY_URL", "").strip()
+            else self._response_preview(response)
+        )
         log.warning(
             "%s JSON decode error chain=%s status=%s content_type=%s preview=%s",
             operation,
             self.chain_name,
             response.status_code,
             getattr(response, "headers", {}).get("Content-Type", ""),
-            self._response_preview(response),
+            preview,
         )
 
     @staticmethod
